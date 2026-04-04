@@ -5,8 +5,9 @@
 #include <iostream>
 #include <format>
 
-vec3 lerp(const vec3& a, const vec3& b, const double t);
 color ray_color(const ray& r);
+vec3 lerp(const vec3& a, const vec3& b, const double t);
+bool hit_sphere(const point3& sp_center,const double radius, const ray& r);
 
 static const double aspect_ratio = 16.0 / 9.0; 
 
@@ -57,14 +58,29 @@ int main()
     std::clog << "\rDone.\t\t\t\t\n";
 }
 
+color ray_color(const ray& r)
+{
+    if(hit_sphere(point3(0,0,-1.), .5,r))
+    {
+        return color(1.,0.,0.);
+    }
+    
+    vec3 unit_dir = unit_vector(r.direction());
+    float a = .5 * (unit_dir.y() + 1.0);
+    return lerp(color(1.,1.,1.),color(.5,.7,1.),a);
+}
+
 vec3 lerp(const vec3& a, const vec3& b, const double t)
 {
     return (1.-t)*a+t*b;
 }
 
-color ray_color(const ray& r)
+bool hit_sphere(const point3& sp_center,const double radius, const ray& r)
 {
-    vec3 unit_dir = unit_vector(r.direction());
-    float a = .5 * (unit_dir.y() + 1.0);
-    return lerp(color(1.,1.,1.),color(.5,.7,1.),a);
+    vec3 oc = sp_center - r.origin();
+    double a = dot(r.direction(),r.direction());
+    double b = -2. * dot(r.direction(), oc);
+    double c = dot(oc,oc) - radius * radius;
+    double delta = b*b-4.*a*c;
+    return (delta >= 0);
 }
