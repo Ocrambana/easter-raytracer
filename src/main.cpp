@@ -1,15 +1,18 @@
 #include "vec3.h"
 #include "color.h"
 #include "ray.h"
+#include "hittable.h"
+#include "sphere.h"
 
 #include <iostream>
 #include <format>
 
 color ray_color(const ray& r);
 vec3 lerp(const vec3& a, const vec3& b, const double t);
-double hit_sphere(const point3& sp_center,const double radius, const ray& r);
 
 static const double aspect_ratio = 16.0 / 9.0; 
+
+sphere sp{point3(0.,0.,-1.),.5};
 
 int main()
 {
@@ -60,11 +63,10 @@ int main()
 
 color ray_color(const ray& r)
 {
-    point3 sp_c{0,0,-1.};
-    double t = hit_sphere(sp_c, .5,r);
-    if(t > 0.)
+    hit_record hit{};
+    if(sp.hit(r,0.,4.,hit))
     {
-        vec3 normal = unit_vector(r.at(t) - sp_c);
+        vec3 normal = hit.normal;
         return .5 * color(normal.x()+1,normal.y()+1,normal.z()+1);
     }
 
@@ -76,23 +78,4 @@ color ray_color(const ray& r)
 vec3 lerp(const vec3& a, const vec3& b, const double t)
 {
     return (1.-t)*a+t*b;
-}
-
-double hit_sphere(const point3& sp_center,const double radius, const ray& r)
-{
-    vec3 oc = sp_center - r.origin();
-    double a = r.direction().length_squared();
-    double h = dot(r.direction(), oc); // b = -2h ci semplifica la formula
-    double c = oc.length_squared() - radius * radius;
-    double delta = h*h-a*c;
-    if (delta < 0)
-    {
-        return -1.;
-    }
-    else
-    {
-        // supponiamo che la soluzione negativa sia sempre la piú vicina
-        // alla camera per ora
-        return (h - std::sqrt(delta)) / a;
-    }
 }
