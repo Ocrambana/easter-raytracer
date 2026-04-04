@@ -7,14 +7,14 @@
 
 color ray_color(const ray& r);
 vec3 lerp(const vec3& a, const vec3& b, const double t);
-bool hit_sphere(const point3& sp_center,const double radius, const ray& r);
+double hit_sphere(const point3& sp_center,const double radius, const ray& r);
 
 static const double aspect_ratio = 16.0 / 9.0; 
 
 int main()
 {
     //Image
-    int img_width = 400;
+    int img_width = 800;
 
     // calcolo l'altezza dell'immagine
     int img_height = static_cast<int>(img_width / aspect_ratio);
@@ -60,11 +60,14 @@ int main()
 
 color ray_color(const ray& r)
 {
-    if(hit_sphere(point3(0,0,-1.), .5,r))
+    point3 sp_c{0,0,-1.};
+    double t = hit_sphere(sp_c, .5,r);
+    if(t > 0.)
     {
-        return color(1.,0.,0.);
+        vec3 normal = unit_vector(r.at(t) - sp_c);
+        return .5 * color(normal.x()+1,normal.y()+1,normal.z()+1);
     }
-    
+
     vec3 unit_dir = unit_vector(r.direction());
     float a = .5 * (unit_dir.y() + 1.0);
     return lerp(color(1.,1.,1.),color(.5,.7,1.),a);
@@ -75,12 +78,21 @@ vec3 lerp(const vec3& a, const vec3& b, const double t)
     return (1.-t)*a+t*b;
 }
 
-bool hit_sphere(const point3& sp_center,const double radius, const ray& r)
+double hit_sphere(const point3& sp_center,const double radius, const ray& r)
 {
     vec3 oc = sp_center - r.origin();
-    double a = dot(r.direction(),r.direction());
-    double b = -2. * dot(r.direction(), oc);
-    double c = dot(oc,oc) - radius * radius;
-    double delta = b*b-4.*a*c;
-    return (delta >= 0);
+    double a = r.direction().length_squared();
+    double h = dot(r.direction(), oc); // b = -2h ci semplifica la formula
+    double c = oc.length_squared() - radius * radius;
+    double delta = h*h-a*c;
+    if (delta < 0)
+    {
+        return -1.;
+    }
+    else
+    {
+        // supponiamo che la soluzione negativa sia sempre la piú vicina
+        // alla camera per ora
+        return (h - std::sqrt(delta)) / a;
+    }
 }
