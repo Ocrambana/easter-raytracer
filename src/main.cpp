@@ -12,16 +12,21 @@ int main()
     std::cout << std::format("P3\n{} {}\n255\n", img_width, img_height);
     
     for(int j=0; j < img_height; j++)
+    {
         for(int i = 0; i< img_width; i++)
         {
+            std::clog << std::format("\rScanlines remaning: {} ", img_height - j) << std::flush;
             double r = static_cast<double>(i) / (img_width -1);
             double g = static_cast<double>(j) / (img_height -1);
             double b = 0.0;
-
+            
             int ir = static_cast<int>(255.999 * r);
             int ig = static_cast<int>(255.999 * g);
             int ib = static_cast<int>(255.999 * b);
             
             std::cout << std::format("{} {} {}\n",ir,ig,ib); 
         }
+    }
+    
+    std::clog << "\rDone.\t\t\t\t\n";
 }
