@@ -1,12 +1,23 @@
+#include "vec3.h"
+#include "color.h"
+
 #include <iostream>
 #include <format>
+
+static const double aspect_ratio = 16.0 / 9.0; 
 
 int main()
 {
     //Image
+    int img_width = 400;
 
-    int img_width = 256;
-    int img_height = 256;
+    // calcolo l'altezza dell'immagine
+    int img_height = static_cast<int>(img_width / aspect_ratio);
+    img_height = (img_height < 1) ? 1 : img_height;
+
+    // Setup Viewport
+    double vprt_height = 2.0;
+    double vprt_width = vprt_height * (static_cast<double>(img_width)/img_height);
 
     // Render
     std::cout << std::format("P3\n{} {}\n255\n", img_width, img_height);
@@ -16,15 +27,14 @@ int main()
         for(int i = 0; i< img_width; i++)
         {
             std::clog << std::format("\rScanlines remaning: {} ", img_height - j) << std::flush;
-            double r = static_cast<double>(i) / (img_width -1);
-            double g = static_cast<double>(j) / (img_height -1);
-            double b = 0.0;
             
-            int ir = static_cast<int>(255.999 * r);
-            int ig = static_cast<int>(255.999 * g);
-            int ib = static_cast<int>(255.999 * b);
+            color pixel_color = color(
+                static_cast<double>(i) / (img_width -1),
+                static_cast<double>(j) / (img_height -1),
+                0.0
+            );
             
-            std::cout << std::format("{} {} {}\n",ir,ig,ib); 
+            write_color(std::cout, pixel_color);
         }
     }
     
