@@ -68,7 +68,7 @@ int main()
 color ray_color(const ray& r, const hittable& world)
 {
     hit_record hit{};
-    if(world.hit(r,0.,infinity,hit))
+    if(world.hit(r,interval(0.,infinity),hit))
     {
         return .5 * (hit.normal + color(1.,1.,1.));
     }
