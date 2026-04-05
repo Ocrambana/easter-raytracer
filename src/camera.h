@@ -92,9 +92,9 @@ class camera
         if(depth <= 0) return color(0,0,0);
 
         hit_record hit{};
-        if(world.hit(r,interval(0.,infinity),hit))
+        if(world.hit(r,interval(0.001,infinity),hit))
         {
-            vec3 direction = random_on_hemisphere(hit.normal);
+            vec3 direction = hit.normal + random_unit_vector();
             return .5 * ray_color(ray(hit.p, direction), depth-1, world);
         }
 
