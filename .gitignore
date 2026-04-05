@@ -21,3 +21,4 @@ CMakeUserPresets.json
 [Bb]uild/*
 *.ppm
 .vscode/*
+[Rr]enders/*
