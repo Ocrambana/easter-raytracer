@@ -1,13 +1,11 @@
-#include "vec3.h"
-#include "color.h"
-#include "ray.h"
+#include "rtweekend.h"
 #include "hittable.h"
+#include "hittable_list.h"
 #include "sphere.h"
 
-#include <iostream>
 #include <format>
 
-color ray_color(const ray& r);
+color ray_color(const ray& r, const hittable& world);
 vec3 lerp(const vec3& a, const vec3& b, const double t);
 
 static const double aspect_ratio = 16.0 / 9.0; 
@@ -22,6 +20,12 @@ int main()
     // calcolo l'altezza dell'immagine
     int img_height = static_cast<int>(img_width / aspect_ratio);
     img_height = (img_height < 1) ? 1 : img_height;
+
+    // World
+    hittable_list world;
+
+    world.add(make_shared<sphere>(point3(0,0,-1),.5));
+    world.add(make_shared<sphere>(point3(0,-100.5,-1),100));
 
     // Camera
     double focal_length = 1.0;
@@ -52,7 +56,7 @@ int main()
             vec3 ray_dir = px_center - cam_center;
             ray r{cam_center, ray_dir};
 
-            color pixel_color = ray_color(r);
+            color pixel_color = ray_color(r, world);
             
             write_color(std::cout, pixel_color);
         }
@@ -61,13 +65,12 @@ int main()
     std::clog << "\rDone.\t\t\t\t\n";
 }
 
-color ray_color(const ray& r)
+color ray_color(const ray& r, const hittable& world)
 {
     hit_record hit{};
-    if(sp.hit(r,0.,4.,hit))
+    if(world.hit(r,0.,infinity,hit))
     {
-        vec3 normal = hit.normal;
-        return .5 * color(normal.x()+1,normal.y()+1,normal.z()+1);
+        return .5 * (hit.normal + color(1.,1.,1.));
     }
 
     vec3 unit_dir = unit_vector(r.direction());
