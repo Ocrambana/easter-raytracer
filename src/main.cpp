@@ -3,6 +3,7 @@
 #include "hittable_list.h"
 #include "sphere.h"
 #include "camera.h"
+#include "material.h"
 
 #include <chrono>
 
@@ -11,8 +12,15 @@ int main()
     // World
     hittable_list world;
 
-    world.add(make_shared<sphere>(point3(0,0,-1),.5));
-    world.add(make_shared<sphere>(point3(0,-100.5,-1),100));
+    auto mat_ground = make_shared<lambertian>(color(.8,.8,.0));
+    auto mat_center = make_shared<lambertian>(color(.1,.2,.5));
+    auto mat_right = make_shared<metal>(color(.8,.6,.2));
+    auto mat_left = make_shared<metal>(color(.8,.8,.8));
+
+    world.add(make_shared<sphere>(point3(0,-100.5,-1), 100, mat_ground));
+    world.add(make_shared<sphere>(point3(0,0,-1.2), .5, mat_center));
+    world.add(make_shared<sphere>(point3(-1.0,0,-1.0), .5, mat_left));
+    world.add(make_shared<sphere>(point3(1.0,0,-1.0), .5, mat_right));
 
     camera cam{};
     cam.aspect_ratio = 16.0/9.0;
