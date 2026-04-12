@@ -18,17 +18,22 @@ int main()
     auto mat_left = make_shared<dielectric>(1.5);
     auto mat_bubble = make_shared<dielectric>(1./1.50);
     
-    world.add(make_shared<sphere>(point3(0,-100.5,-1), 100, mat_ground));
-    world.add(make_shared<sphere>(point3(0,0,-1.2), .5, mat_center));
-    world.add(make_shared<sphere>(point3(-1.0,0,-1.0), .5, mat_left));
-    world.add(make_shared<sphere>(point3(-1.0,0,-1.0), .4, mat_bubble));
-    world.add(make_shared<sphere>(point3(1.0,0,-1.0), .5, mat_right));
+    world.add(make_shared<sphere>(point3(     0, -100.5,    -1.0),  100, mat_ground));
+    world.add(make_shared<sphere>(point3(     0,      0,    -1.2),   .5, mat_center));
+    world.add(make_shared<sphere>(point3(  -1.0,      0,    -1.0),   .5, mat_left));
+    world.add(make_shared<sphere>(point3(  -1.0,      0,    -1.0),   .4, mat_bubble));
+    world.add(make_shared<sphere>(point3(   1.0,      0,    -1.0),   .5, mat_right));
 
     camera cam{};
     cam.aspect_ratio = 16.0/9.0;
     cam.img_width = 400;
     cam.samples_per_pixels = 100;
     cam.max_depth = 50;
+
+    cam.vfov = 20;
+    cam.lookfrom = point3(-2,2,1);
+    cam.lookat = point3(0,0,-1);
+    cam.vup = vec3(0,1,0);
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     cam.render(world);

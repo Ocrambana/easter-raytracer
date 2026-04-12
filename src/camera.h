@@ -1,6 +1,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "rtweekend.h"
 #include "hittable.h"
 #include "material.h"
 
@@ -13,6 +14,11 @@ class camera
     int     img_width           = 100;  // Rendered image width in pixels
     int     samples_per_pixels  = 10;   // Count of random samples for each pixels
     int     max_depth           = 10;   // max number of ray bounces
+    
+    double  vfov        = 90.0;             // Vertical fiwld of view
+    point3  lookfrom    = point3(0,0,0);    // Point camera is looking from
+    point3  lookat      = point3(0,0,-1);   // Point camera is looking at
+    vec3    vup         = vec3(0,1,0);      // camera-relative up direction
 
     void render(const hittable& world)
     {
@@ -45,7 +51,7 @@ class camera
     point3  px00_loc;           // location of pixel 00 (upper left viewport)
     vec3    px_delta_u,         // offset to pixel to the right
             px_delta_v;         // offset to pixel to the bottom
-
+    vec3    u,v,w;              // camera base vectors
 
     void initialize()
     {
@@ -54,18 +60,25 @@ class camera
 
         pixel_sample_scale = 1.0 / samples_per_pixels;
 
-        center = point3(0.,0.,0.);
-        double focal_length = 1.0;
-        double vprt_height = 2.0;
+        center = lookfrom;
+        double focal_length = (lookfrom - lookat).length();
+        double theta =  vfov * deg_to_rad;
+        double h = std::tan(theta / 2.0);
+        double vprt_height = 2.0 * h * focal_length;
         double vprt_width = vprt_height * (static_cast<double>(img_width)/img_height);
 
-        vec3 vprt_u{vprt_width,0,0};
-        vec3 vprt_v{0, -vprt_height,0};
+        // calculate base
+        w = unit_vector(lookfrom - lookat);
+        u = unit_vector(cross(vup,w));
+        v = cross(w,u);
+
+        vec3 vprt_u = vprt_width * u;
+        vec3 vprt_v = vprt_height * (-v);
 
         px_delta_u = vprt_u/img_width;
         px_delta_v = vprt_v/img_height;
 
-        vec3 vprt_upper_left = center - vec3(0,0,focal_length) - vprt_u/2 - vprt_v/2;
+        vec3 vprt_upper_left = center - (focal_length * w) - vprt_u/2 - vprt_v/2;
         px00_loc = vprt_upper_left + .5 * (px_delta_u + px_delta_v);
 
     }
