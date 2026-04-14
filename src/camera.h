@@ -4,8 +4,11 @@
 #include "rtweekend.h"
 #include "hittable.h"
 #include "material.h"
+#include "parallel.h"
 
 #include <format>
+#include <thread>
+#include <map>
 
 class camera
 {
@@ -23,29 +26,68 @@ class camera
     double defocus_angle = 0;
     double focus_dist = 10;
 
+    int num_threads = 5;
+
     void render(const hittable& world)
     {
         initialize();
 
         std::cout << std::format("P3\n{} {}\n255\n", img_width, img_height);
     
-        for(int j=0; j < img_height; j++)
+        // for(int j=0; j < img_height; j++)
+        // {
+        //     std::clog << std::format("\rScanlines remaning: {} ", img_height - j) << std::flush;
+        //     for(int i = 0; i< img_width; i++)
+        //     {
+        //         color pixel_color{0,0,0};
+        //         for (size_t sample = 0; sample < samples_per_pixels; sample++)
+        //         {
+        //             ray r = get_ray(i,j);
+        //             pixel_color += ray_color(r, max_depth, world);
+        //         }
+        //         write_color(pixel_color * pixel_sample_scale);
+        //     }
+        // }
+
+        ThreadSafeQueue queue;
+        std::vector<std::thread> producers;
+
+        int actual_threads = num_threads;
+        while(img_height % actual_threads != 0)
         {
-            std::clog << std::format("\rScanlines remaning: {} ", img_height - j) << std::flush;
-            for(int i = 0; i< img_width; i++)
-            {
-                color pixel_color{0,0,0};
-                for (size_t sample = 0; sample < samples_per_pixels; sample++)
-                {
-                    ray r = get_ray(i,j);
-                    pixel_color += ray_color(r, max_depth, world);
-                }
-                write_color(std::cout, pixel_color * pixel_sample_scale);
-            }
+            actual_threads--;
         }
+        
+        std::clog << std::format("using {} threads\n", actual_threads) << std::flush;
+        int line_per_thread = (img_width * img_height) / actual_threads;
+
+        for (size_t i = 0; i < num_threads; i++)
+        {
+            producers.emplace_back(
+                generate_pixels,
+                std::cref(world),
+                i * line_per_thread,
+                line_per_thread,
+                std::ref(queue)
+            );
+        }
+        
+        std::thread consumer_thread(
+            consume_pixels,
+            std::ref(queue),
+            img_width * img_height
+        );
+
+
+        for(auto& t : producers)
+        {
+            t.join();
+        }
+
+        consumer_thread.join();
     
         std::clog << "\nDone.\t\t\t\t";
-    }
+    } 
 
     private:
     int     img_height;         // rendered image height
@@ -134,6 +176,49 @@ class camera
         vec3 unit_dir = unit_vector(r.direction());
         float a = .5 * (unit_dir.y() + 1.0);
         return (1.-a) * color(1.,1.,1.) + a * color(.5,.7,1.);
+    }
+
+    void generate_pixels(const hittable& world, int start_id_j,int j_count, ThreadSafeQueue& queue)
+    {
+        for (int j = 0; j < j_count; j++)
+        {
+            int actual_j = start_id_j + j;
+            for(int i = 0; i< img_width; i++)
+            {
+                int id = actual_j * img_width + i;
+                std::string clogMsg = std::format("\rPixel Done: {}/{} ", id, img_width * img_height);
+
+                color pixel_color{0,0,0};
+                for (size_t sample = 0; sample < samples_per_pixels; sample++)
+                {
+                    ray r = get_ray(i,actual_j);
+                    pixel_color += ray_color(r, max_depth, world);
+                }
+                std::string msg = write_color(pixel_color * pixel_sample_scale);
+                queue.push(LogMessage{id, msg, clogMsg});
+            }
+        }
+    }
+
+    void consume_pixels(ThreadSafeQueue& queue, int total_logs)
+    {
+        int expected = 0;
+        std::map<int, LogMessage> buffer;
+
+        while(expected < total_logs)
+        {
+            LogMessage log = queue.wait_and_pop();
+
+            buffer[log.id] = log;
+
+            while(buffer.count(expected))
+            {
+                std::clog << buffer[expected].logMsg << std::flush;
+                std::cout << buffer[expected].msg;
+                buffer.erase(expected);
+                expected++;
+            }
+        }
     }
 };
 
