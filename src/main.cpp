@@ -35,6 +35,9 @@ int main()
     cam.lookat = point3(0,0,-1);
     cam.vup = vec3(0,1,0);
 
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
+
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     cam.render(world);
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
