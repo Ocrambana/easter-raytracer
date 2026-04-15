@@ -64,7 +64,8 @@ class camera
         for (size_t i = 0; i < num_threads; i++)
         {
             producers.emplace_back(
-                generate_pixels,
+                &camera::generate_pixels,
+                this,
                 std::cref(world),
                 i * line_per_thread,
                 line_per_thread,
@@ -73,9 +74,10 @@ class camera
         }
         
         std::thread consumer_thread(
-            consume_pixels,
+            &camera::consume_pixels,
+            this,
             std::ref(queue),
-            img_width * img_height
+            (img_width * img_height) - 1
         );
 
 
