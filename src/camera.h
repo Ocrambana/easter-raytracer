@@ -34,22 +34,6 @@ class camera
         initialize();
 
         std::cout << std::format("P3\n{} {}\n255\n", img_width, img_height);
-    
-        // for(int j=0; j < img_height; j++)
-        // {
-        //     std::clog << std::format("\rScanlines remaning: {} ", img_height - j) << std::flush;
-        //     for(int i = 0; i< img_width; i++)
-        //     {
-        //         color pixel_color{0,0,0};
-        //         for (size_t sample = 0; sample < samples_per_pixels; sample++)
-        //         {
-        //             ray r = get_ray(i,j);
-        //             pixel_color += ray_color(r, max_depth, world);
-        //         }
-        //         write_color(pixel_color * pixel_sample_scale);
-        //     }
-        // }
-
         ThreadSafeQueue queue;
 
         threadpool pool{num_threads};
@@ -133,8 +117,9 @@ class camera
         
         vec3 r_origin = (defocus_angle < 0) ? center : defocus_disk_sample();
         vec3 r_dir = px_sample - r_origin;
+        double ray_time = random_double();
 
-        return ray(r_origin, r_dir);
+        return ray(r_origin, r_dir, ray_time);
     }
 
     vec3 sample_square()
@@ -169,27 +154,19 @@ class camera
         return (1.-a) * color(1.,1.,1.) + a * color(.5,.7,1.);
     }
 
-    // void generate_pixels(const hittable& world, int start_id_j,int j_count, ThreadSafeQueue& queue)
     void generate_pixels(const hittable& world, int i,int j, ThreadSafeQueue& queue)
     {
-        // for (int j = 0; j < j_count; j++)
-        // {
-            // int actual_j = start_id_j + j;
-            // for(int i = 0; i< img_width; i++)
-            // {
-                int id = j * img_width + i;
-                std::string clogMsg = std::format("\rPixel Done: {}/{} ", id, img_width * img_height);
+        int id = j * img_width + i;
+        std::string clogMsg = std::format("\rPixel Done: {}/{} ", id, img_width * img_height);
 
-                color pixel_color{0,0,0};
-                for (size_t sample = 0; sample < samples_per_pixels; sample++)
-                {
-                    ray r = get_ray(i,j);
-                    pixel_color += ray_color(r, max_depth, world);
-                }
-                std::string msg = write_color(pixel_color * pixel_sample_scale);
-                queue.push(LogMessage{id, msg, clogMsg});
-        //     }
-        // }
+        color pixel_color{0,0,0};
+        for (size_t sample = 0; sample < samples_per_pixels; sample++)
+        {
+            ray r = get_ray(i,j);
+            pixel_color += ray_color(r, max_depth, world);
+        }
+        std::string msg = write_color(pixel_color * pixel_sample_scale);
+        queue.push(LogMessage{id, msg, clogMsg});
     }
 
     void consume_pixels(ThreadSafeQueue& queue, int total_logs)
