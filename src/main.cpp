@@ -59,10 +59,8 @@ int main()
     
     camera cam{};
     cam.aspect_ratio = 16.0/9.0;
-    cam.img_width = 400;
-    // cam.img_width = 1200;
-    cam.samples_per_pixels = 10;
-    // cam.samples_per_pixels = 500;
+    cam.img_width = 1200;
+    cam.samples_per_pixels = 500;
     cam.max_depth = 50;
 
     cam.vfov = 20;
@@ -72,6 +70,7 @@ int main()
 
     cam.defocus_angle = 0.6;
     cam.focus_dist = 10.0;
+    cam.num_threads = 8;
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     cam.render(world);

@@ -38,7 +38,7 @@ class ThreadSafeQueue
                 return !queue.empty();
             });
 
-            LogMessage log = queue.top();
+            LogMessage log = std::move(queue.top());
             queue.pop();
             return log;
         }

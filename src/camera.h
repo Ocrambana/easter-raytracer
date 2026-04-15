@@ -5,6 +5,7 @@
 #include "hittable.h"
 #include "material.h"
 #include "parallel.h"
+#include "threadpool.h"
 
 #include <format>
 #include <thread>
@@ -26,7 +27,7 @@ class camera
     double defocus_angle = 0;
     double focus_dist = 10;
 
-    int num_threads = 5;
+    long unsigned int num_threads = 5;
 
     void render(const hittable& world)
     {
@@ -50,27 +51,21 @@ class camera
         // }
 
         ThreadSafeQueue queue;
-        std::vector<std::thread> producers;
 
-        int actual_threads = num_threads;
-        while(img_height % actual_threads != 0)
-        {
-            actual_threads--;
-        }
-        
-        std::clog << std::format("using {} threads\n", actual_threads) << std::flush;
-        int line_per_thread = (img_width * img_height) / actual_threads;
+        threadpool pool{num_threads};
 
-        for (size_t i = 0; i < num_threads; i++)
+        std::clog << std::format("using {} threads\n", num_threads) << std::flush;
+
+        for(int j=0; j < img_height; j++)
         {
-            producers.emplace_back(
-                &camera::generate_pixels,
-                this,
-                std::cref(world),
-                i * line_per_thread,
-                line_per_thread,
-                std::ref(queue)
-            );
+            for(int i = 0; i< img_width; i++)
+            {
+                pool.enqueue([i,j,this,&world, &queue]()
+                    {
+                        generate_pixels(world, i , j, queue);
+                    }
+                );
+            }
         }
         
         std::thread consumer_thread(
@@ -79,12 +74,6 @@ class camera
             std::ref(queue),
             (img_width * img_height) - 1
         );
-
-
-        for(auto& t : producers)
-        {
-            t.join();
-        }
 
         consumer_thread.join();
     
@@ -180,26 +169,27 @@ class camera
         return (1.-a) * color(1.,1.,1.) + a * color(.5,.7,1.);
     }
 
-    void generate_pixels(const hittable& world, int start_id_j,int j_count, ThreadSafeQueue& queue)
+    // void generate_pixels(const hittable& world, int start_id_j,int j_count, ThreadSafeQueue& queue)
+    void generate_pixels(const hittable& world, int i,int j, ThreadSafeQueue& queue)
     {
-        for (int j = 0; j < j_count; j++)
-        {
-            int actual_j = start_id_j + j;
-            for(int i = 0; i< img_width; i++)
-            {
-                int id = actual_j * img_width + i;
+        // for (int j = 0; j < j_count; j++)
+        // {
+            // int actual_j = start_id_j + j;
+            // for(int i = 0; i< img_width; i++)
+            // {
+                int id = j * img_width + i;
                 std::string clogMsg = std::format("\rPixel Done: {}/{} ", id, img_width * img_height);
 
                 color pixel_color{0,0,0};
                 for (size_t sample = 0; sample < samples_per_pixels; sample++)
                 {
-                    ray r = get_ray(i,actual_j);
+                    ray r = get_ray(i,j);
                     pixel_color += ray_color(r, max_depth, world);
                 }
                 std::string msg = write_color(pixel_color * pixel_sample_scale);
                 queue.push(LogMessage{id, msg, clogMsg});
-            }
-        }
+        //     }
+        // }
     }
 
     void consume_pixels(ThreadSafeQueue& queue, int total_logs)
